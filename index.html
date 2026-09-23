@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[Santander Financeira] Daily Operations</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --acc:#A100FF;--acc-dark:#7a00c4;--acc-light:#f3e6ff;--acc-mid:#d580ff;
+  --text:#1a1a1a;--text-2:#555;--text-3:#888;--border:#e8e8e8;--border-2:#d0d0d0;
+  --bg:#f7f7f8;--surface:#fff;--danger:#c0392b;--danger-bg:#fdf0ef;
+  --success:#1a7a4a;--success-bg:#e6f7ef;--warn:#a05a00;--warn-bg:#fff4e5;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:#fff;border-bottom:3px solid var(--acc);padding:0 2rem;display:flex;align-items:center;gap:16px;height:64px;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(161,0,255,.08)}
+.header-logo{display:flex;align-items:center;gap:10px}
+.acc-bar{width:4px;height:32px;background:var(--acc);border-radius:2px}
+header h1{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.3px;flex:1}
+.header-sub{font-size:11px;font-weight:500;color:var(--acc);text-transform:uppercase;letter-spacing:.08em;display:block}
+.header-actions{display:flex;gap:8px;align-items:center}
+.container{max-width:880px;margin:2rem auto;padding:0 1.25rem}
+.tabs{display:flex;margin-bottom:1.75rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.tab{flex:1;padding:13px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text-3);transition:all .2s;font-family:'Inter',inherit;letter-spacing:.01em}
+.tab:not(:last-child){border-right:1px solid var(--border)}
+.tab.active{background:var(--acc);color:#fff}
+.tab:hover:not(.active){background:var(--acc-light);color:var(--acc)}
+.section{display:none}.section.active{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+label{font-size:12px;font-weight:600;color:var(--text-3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;font-family:'Inter',inherit;background:#fff;color:var(--text);line-height:1.7;resize:vertical;transition:border .15s}
+textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(161,0,255,.1)}
+input[type=text],input[type=date],select{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:9px 13px;font-size:14px;font-family:'Inter',inherit;background:#fff;color:var(--text);transition:border .15s}
+input:focus,select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(161,0,255,.1)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.field{margin-bottom:14px}
+.btn{padding:9px 18px;border:1.5px solid var(--border-2);border-radius:10px;background:#fff;font-size:13px;cursor:pointer;font-family:'Inter',inherit;color:var(--text);transition:all .15s;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--bg);border-color:#bbb}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-acc{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn-acc:hover:not(:disabled){background:var(--acc-dark);border-color:var(--acc-dark)}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:8px}
+.btn-danger{color:var(--danger);border-color:#f5c0bc}
+.btn-danger:hover{background:var(--danger-bg)}
+.drop-area{border:2px dashed var(--border-2);border-radius:12px;padding:1rem;background:#fafafa;margin-bottom:1rem;transition:all .2s}
+.drop-area:focus-within{border-color:var(--acc);background:var(--acc-light)}
+.drop-area textarea{border:none;background:transparent;min-height:180px;box-shadow:none}
+.drop-area textarea:focus{border:none;box-shadow:none}
+.ai-status{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;font-size:14px;margin-bottom:1rem;font-weight:500}
+.ai-status.loading{background:var(--warn-bg);color:var(--warn)}
+.ai-status.success{background:var(--success-bg);color:var(--success)}
+.ai-status.error{background:var(--danger-bg);color:var(--danger)}
+.ai-status.hidden{display:none}
+.spinner{width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.preview-card{background:#fff;border:2px solid var(--acc-mid);border-radius:14px;padding:1.5rem;margin-bottom:1.25rem}
+.preview-header{font-size:13px;font-weight:700;color:var(--acc);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.preview-label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.acao-preview{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.acao-preview:last-child{border:none}
+.acao-preview-dot{width:7px;height:7px;border-radius:50%;background:var(--acc);margin-top:5px;flex-shrink:0}
+.ata-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04);transition:box-shadow .2s}
+.ata-item:hover{box-shadow:0 4px 16px rgba(161,0,255,.08)}
+.ata-header{padding:16px 1.5rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:background .15s}
+.ata-header:hover{background:#fafafa}
+.ata-title{font-weight:700;font-size:15px;letter-spacing:-.2px}
+.ata-meta{font-size:12px;color:var(--text-3);margin-top:3px}
+.ata-body{border-top:1px solid var(--border);padding:1.5rem;display:none}
+.ata-body.open{display:block}
+.ata-texto{font-size:13px;color:var(--text-2);margin-bottom:1.25rem;white-space:pre-wrap;line-height:1.75;background:#fafafa;border-radius:10px;padding:14px 16px;border:1px solid var(--border);max-height:220px;overflow-y:auto}
+.acoes-titulo{font-size:12px;font-weight:700;margin-bottom:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em}
+.acao-item{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+.acao-item:last-child{border:none}
+.acao-item input[type=checkbox]{width:17px;height:17px;cursor:pointer;margin-top:2px;flex-shrink:0;accent-color:var(--acc)}
+.acao-txt{font-size:14px;line-height:1.5;flex:1;font-weight:500}
+.acao-txt.done{text-decoration:line-through;color:var(--text-3);font-weight:400}
+.acao-resp{font-size:12px;color:var(--text-3);margin-top:3px}
+.acao-prazo{font-size:12px;color:var(--warn);margin-top:2px;font-weight:500}
+.badge{display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.03em}
+.badge-ok{background:#e6f7ef;color:var(--success)}
+.badge-pend{background:var(--warn-bg);color:var(--warn)}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.progress-fill{height:100%;background:var(--acc);border-radius:2px;transition:width .4s}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:1.75rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.stat-n{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.stat-l{font-size:12px;color:var(--text-3);margin-top:4px;font-weight:500}
+.filtro-row{display:flex;gap:8px;margin-bottom:1.25rem;align-items:center}
+.filtro-row input{flex:1}
+.empty{text-align:center;padding:3rem 1rem;color:var(--text-3);font-size:14px}
+.ata-acoes-grp{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.ata-acoes-grp-header{background:linear-gradient(135deg,#faf5ff 0%,#f7f7f8 100%);padding:12px 16px;border-bottom:1px solid var(--border);border-left:3px solid var(--acc)}
+.ata-acoes-grp-body{padding:4px 16px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)}
+.modal-overlay.hidden{display:none}
+.modal{background:#fff;border-radius:18px;width:100%;max-width:660px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.2),0 0 0 1px rgba(161,0,255,.1)}
+.modal-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,var(--acc-light) 0%,#fff 100%);border-radius:18px 18px 0 0}
+.modal-header h2{font-size:16px;font-weight:700;color:var(--acc)}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-3);line-height:1;padding:4px;border-radius:6px}
+.modal-close:hover{background:var(--border);color:var(--text)}
+.modal-body{padding:1.5rem}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:#fafafa;border-radius:0 0 18px 18px}
+.acao-edit-row{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.acao-edit-row:last-child{border:none}
+.acao-edit-row input{flex:1;font-size:13px}
+.sync-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);font-weight:500}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:var(--success)}
+.sync-dot.saving{background:var(--warn);animation:pulse 1s infinite}
+.sync-dot.error{background:var(--danger)}
+.badge-edit{background:var(--acc-light);color:var(--acc);padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@media(max-width:600px){
+  .row2{grid-template-columns:1fr}
+  .filtro-row{flex-wrap:wrap}
+  .filtro-row select{width:100%}
+  .stats-row{grid-template-columns:1fr 1fr}
+  header{padding:0 1rem}
+  header h1{font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">
+    <div class="acc-bar"></div>
+    <div>
+      <span class="header-sub">Accenture</span>
+      <h1>[Santander Financeira] Daily Operations</h1>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="sync-bar">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">Carregando...</span>
+    </div>
+    <span id="hd-count" style="font-size:12px;color:var(--text-3);font-weight:500;margin-left:8px"></span>
+    <button id="btn-edicao" class="btn btn-sm" onclick="toggleModoEdicao()" style="margin-left:12px">🔒 Editar</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button id="tab-nova" class="tab" onclick="showTab('nova')" style="display:none">+ Nova ata</button>
+    <button id="tab-lista" class="tab active" onclick="showTab('lista')">Consultar atas</button>
+    <button id="tab-acoes" class="tab" onclick="showTab('acoes')">Todas as ações</button>
+  </div>
+
+  <div id="sec-nova" class="section">
+    <div class="card">
+      <label style="font-size:14px;text-transform:none;letter-spacing:0;font-weight:600;color:var(--text)">Cole o texto completo da ata — extração automática</label>
+      <div class="drop-area" style="margin-top:10px">
+        <textarea id="inp-ata" rows="10" placeholder="Cole aqui o texto da ata de reunião..."></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn" onclick="limparTudo()">Limpar</button>
+        <button class="btn btn-acc" onclick="extrairLocal()">Extrair</button>
+      </div>
+    </div>
+    <div class="ai-status hidden" id="ai-status"><div class="spinner"></div><span id="ai-msg"></span></div>
+    <div id="preview-area" style="display:none">
+      <div class="preview-card">
+        <div class="preview-header">✅ Informações extraídas — revise e confirme</div>
+        <div class="row2">
+          <div class="field"><div class="preview-label">Data</div><input type="date" id="prev-data"></div>
+          <div class="field"><div class="preview-label">Título</div><input type="text" id="prev-titulo"></div>
+        </div>
+        <div class="field"><div class="preview-label">Participantes</div><input type="text" id="prev-partic"></div>
+        <div class="field"><div class="preview-label">Ações identificadas</div><div id="prev-acoes-lista"></div></div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">
+          <button class="btn" onclick="limparTudo()">Cancelar</button>
+          <button class="btn btn-acc" onclick="confirmarSalvar()">💾 Salvar ata</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sec-lista" class="section active">
+    <div class="filtro-row">
+      <input type="text" id="busca" placeholder="Buscar por título, data ou participantes..." oninput="renderLista()">
+      <select id="filtro-status" onchange="renderLista()" style="width:220px">
+        <option value="">Todas as atas</option>
+        <option value="pendente">Com ações pendentes</option>
+        <option value="concluido">Todas concluídas</option>
+      </select>
+    </div>
+    <div id="lista-atas"><div class="empty">⏳ Carregando atas...</div></div>
+  </div>
+
+  <div id="sec-acoes" class="section">
+    <div class="stats-row" id="stats-row">
+      <div class="stat"><div class="stat-n" style="color:var(--acc)">—</div><div class="stat-l">Total de ações</div></div>
+      <div class="stat"><div class="stat-n" style="color:var(--warn)">—</div><div class="stat-l">Pendentes</div></div>
+      <div class="stat"><div class="stat-n" style="color:var(--success)">—</div><div class="stat-l">Concluídas</div></div>
+    </div>
+    <div style="margin-bottom:1.25rem">
+      <select id="filtro-acoes" onchange="renderTodasAcoes()" style="width:200px">
+        <option value="">Todas as ações</option>
+        <option value="pendente">Pendentes</option>
+        <option value="concluido">Concluídas</option>
+      </select>
+    </div>
+    <div id="todas-acoes"><div class="empty">⏳ Carregando...</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal-overlay" onclick="fecharModalSeFora(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>✏️ Editar ata</h2>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="row2">
+        <div class="field"><label>Data</label><input type="date" id="edit-data"></div>
+        <div class="field"><label>Título</label><input type="text" id="edit-titulo" placeholder="Título da reunião"></div>
+      </div>
+      <div class="field"><label>Participantes</label><input type="text" id="edit-partic" placeholder="Nomes separados por vírgula"></div>
+      <div class="field"><label>Texto da ata</label><textarea id="edit-texto" rows="6"></textarea></div>
+      <div class="field">
+        <label>Ações</label>
+        <div id="edit-acoes-lista"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input type="text" id="edit-nova-acao" placeholder="Nova ação..." style="flex:2;font-size:13px">
+          <input type="text" id="edit-nova-resp" placeholder="Responsável" style="flex:1;font-size:13px">
+          <button class="btn btn-sm btn-acc" onclick="addAcaoEdit()">+ Adicionar</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-acc" onclick="salvarEdicao()">💾 Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const JSONBIN_API_KEY = '$2a$10$Z8gPg9v5ZtpPcxwzRtgDbOh0bi6J2tnqmFwBikPhBhKu5U8Q7WhWu';
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
+const BIN_ID = '6ab2ecfeac6210605aeac5e9';
+const SENHA_EDICAO = 'santfin';
+
+let atas = [];
+let editandoId = null;
+let dadosExtraidos = null;
+let salvandoTimeout = null;
+let modoEdicao = false;
+
+// SYNC
+function setSyncStatus(status, label) {
+  document.getElementById('sync-dot').className = 'sync-dot ' + status;
+  document.getElementById('sync-label').textContent = label;
+}
+
+async function carregarDados() {
+  setSyncStatus('saving', 'Carregando...');
+  try {
+    const resp = await fetch(`${JSONBIN_BASE}/${BIN_ID}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_API_KEY }
+    });
+    const data = await resp.json();
+    atas = data.record.atas || [];
+    setSyncStatus('ok', 'Sincronizado');
+  } catch(e) {
+    console.error(e);
+    setSyncStatus('error', 'Erro ao carregar');
+    atas = [];
+  }
+  updateHd();
+  renderLista();
+  renderTodasAcoes();
+}
+
+async function salvarDados() {
+  setSyncStatus('saving', 'Salvando...');
+  try {
+    await fetch(`${JSONBIN_BASE}/${BIN_ID}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+      body: JSON.stringify({ atas })
+    });
+    setSyncStatus('ok', 'Salvo ✓');
+  } catch(e) {
+    setSyncStatus('error', 'Erro ao salvar');
+  }
+  updateHd();
+}
+
+function save() {
+  clearTimeout(salvandoTimeout);
+  salvandoTimeout = setTimeout(salvarDados, 800);
+}
+
+// MODO EDIÇÃO
+function toggleModoEdicao() {
+  if (modoEdicao) {
+    modoEdicao = false;
+    atualizarUI();
+    if (document.getElementById('sec-nova').classList.contains('active')) showTab('lista');
+    renderLista();
+    renderTodasAcoes();
+    return;
+  }
+  const senha = prompt('Digite a senha para entrar no modo de edição:');
+  if (senha === SENHA_EDICAO) {
+    modoEdicao = true;
+    atualizarUI();
+    renderLista();
+    renderTodasAcoes();
+  } else if (senha !== null) {
+    alert('Senha incorreta.');
+  }
+}
+
+function atualizarUI() {
+  const btn = document.getElementById('btn-edicao');
+  const tabNova = document.getElementById('tab-nova');
+  if (modoEdicao) {
+    btn.textContent = '🔓 Sair da edição';
+    btn.style.cssText = 'margin-left:12px;background:var(--danger);border-color:var(--danger);color:#fff';
+    tabNova.style.display = '';
+  } else {
+    btn.textContent = '🔒 Editar';
+    btn.style.cssText = 'margin-left:12px';
+    tabNova.style.display = 'none';
+  }
+}
+
+// UTILS
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtData(d){ if(!d) return ''; try{ const [y,m,di]=d.split('-'); return `${di}/${m}/${y}`; }catch(e){return d;} }
+function setStatus(tipo,msg){ const el=document.getElementById('ai-status'); el.className='ai-status '+(tipo||'hidden'); document.getElementById('ai-msg').textContent=msg||''; }
+function uid(){ return Date.now()+'_'+Math.random(); }
+function updateHd(){ const el=document.getElementById('hd-count'); if(el) el.textContent=atas.length+' ata'+(atas.length!==1?'s':'')+' salva'+(atas.length!==1?'s':''); }
+
+function showTab(t){
+  const names=['nova','lista','acoes'];
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',names[i]===t));
+  ['sec-nova','sec-lista','sec-acoes'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',names[i]===t));
+  if(t==='lista') renderLista();
+  if(t==='acoes') renderTodasAcoes();
+}
+
+// EXTRAÇÃO
+function extrairLocal(){
+  const texto = document.getElementById('inp-ata').value.trim();
+  if(!texto){ alert('Cole o texto da ata primeiro.'); return; }
+  setStatus('loading','Analisando o texto...');
+  setTimeout(()=>{
+    try{
+      const d = parseAta(texto);
+      d._textoOriginal = texto;
+      dadosExtraidos = d;
+      mostrarPreview(d);
+      setStatus('success','Extração concluída! Revise e confirme.');
+    }catch(e){
+      setStatus('error','Não foi possível extrair.');
+    }
+  },400);
+}
+
+function parseAta(txt){
+  const meses={janeiro:'01',fevereiro:'02',março:'03',abril:'04',maio:'05',junho:'06',julho:'07',agosto:'08',setembro:'09',outubro:'10',novembro:'11',dezembro:'12'};
+  let data=null;
+  let m=txt.match(/Data[:\s]+(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/i);
+  if(m) data=`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  if(!m){m=txt.match(/Data[:\s]+(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/i);if(m){const mes=meses[m[2].toLowerCase()];if(mes)data=`${m[3]}-${mes}-${m[1].padStart(2,'0')}`;}}
+  if(!m){m=txt.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);if(m)data=`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+  let titulo='';
+  const tM=txt.match(/Reuni[aã]o[:\s]+(.+)/i);
+  if(tM) titulo=tM[1].trim();
+  else{const linhas=txt.split('\n').map(l=>l.trim()).filter(Boolean);titulo=linhas[0]||'Reunião sem título';}
+  let participantes='';
+  const pM=txt.match(/Participantes[:\s]+([^\n]+(?:\n(?![*\-•])(?!\s*\n)[^\n]+)*)/i);
+  if(pM) participantes=pM[1].replace(/\n/g,' ').trim();
+  const acoes=[];
+  const linhas=txt.split('\n');
+  const verbosAcao=/\b(definir|realizar|incluir|implementar|criar|adicionar|utilizar|aplicar|enviar|apresentar|revisar|validar|mapear|desenvolver|garantir|atualizar|agendar|verificar|comunicar|elaborar|consolidar|entregar|alinhar|configurar|incorporar|finalizar|corrigir|submeter|cobrar|acompanhar|continuar|formalizar)\b/i;
+  const filtroAcao=/\b(deve|deverá|ficou definido|ficou acordado|definido que|será|serão|responsável|encaminhamento|ação|tarefa|pendência|próximos passos|follow.?up)\b/i;
+  const marcadores=/^[*\-•]\s+/;
+  for(let i=0;i<linhas.length;i++){
+    const l=linhas[i].trim();
+    if(!l||l.length<20) continue;
+    const semM=l.replace(marcadores,'');
+    if((filtroAcao.test(semM)||verbosAcao.test(semM))&&semM.length>25){
+      let resp='',prazo='';
+      const rM=semM.match(/\(([A-Z][a-záàãéêíóôõúç]+(?: [A-Z][a-záàãéêíóôõúç]+)*)\)/);
+      if(rM) resp=rM[1];
+      const pzM=semM.match(/(?:até|prazo[:\s]+)([^,.]+)/i);
+      if(pzM) prazo=pzM[1].trim();
+      acoes.push({id:uid(),texto:semM.replace(/\([^)]+\)/g,'').trim(),responsavel:resp,prazo,concluida:false});
+    }
+  }
+  return {titulo,data,participantes,acoes};
+}
+
+function mostrarPreview(d){
+  document.getElementById('prev-data').value=d.data||'';
+  document.getElementById('prev-titulo').value=d.titulo||'';
+  document.getElementById('prev-partic').value=d.participantes||'';
+  const lista=document.getElementById('prev-acoes-lista');
+  if(!d.acoes||!d.acoes.length){
+    lista.innerHTML='<div style="font-size:13px;color:var(--text-3);padding:6px 0">Nenhuma ação identificada.</div>';
+  } else {
+    lista.innerHTML=d.acoes.map(a=>`
+      <div class="acao-preview">
+        <div class="acao-preview-dot"></div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:500">${esc(a.texto)}</div>
+          ${a.responsavel?`<div style="font-size:12px;color:var(--text-3);margin-top:2px">👤 ${esc(a.responsavel)}</div>`:''}
+          ${a.prazo?`<div style="font-size:12px;color:var(--warn);margin-top:1px">⏰ ${esc(a.prazo)}</div>`:''}
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('preview-area').style.display='block';
+}
+
+function confirmarSalvar(){
+  if(!dadosExtraidos) return;
+  const titulo=document.getElementById('prev-titulo').value.trim();
+  if(!titulo){alert('O título é obrigatório.');return;}
+  atas.unshift({
+    id:Date.now(), data:document.getElementById('prev-data').value,
+    titulo, participantes:document.getElementById('prev-partic').value.trim(),
+    texto:dadosExtraidos._textoOriginal||'',
+    acoes:(dadosExtraidos.acoes||[]).map(a=>({...a,id:uid()}))
+  });
+  save(); limparTudo(); showTab('lista');
+}
+
+function limparTudo(){
+  document.getElementById('inp-ata').value='';
+  document.getElementById('preview-area').style.display='none';
+  setStatus('',''); dadosExtraidos=null;
+}
+
+// RENDER
+function renderLista(){
+  const busca=(document.getElementById('busca').value||'').toLowerCase();
+  const status=document.getElementById('filtro-status').value;
+  const lista=atas.filter(a=>{
+    const match=!busca||a.titulo.toLowerCase().includes(busca)||a.data.includes(busca)||(a.participantes||'').toLowerCase().includes(busca);
+    const pend=a.acoes.some(ac=>!ac.concluida);
+    const conc=a.acoes.length>0&&a.acoes.every(ac=>ac.concluida);
+    if(status==='pendente'&&!pend) return false;
+    if(status==='concluido'&&!conc) return false;
+    return match;
+  });
+  const el=document.getElementById('lista-atas');
+  if(!lista.length){el.innerHTML='<div class="empty">📂 Nenhuma ata encontrada.</div>';return;}
+  el.innerHTML=lista.map(a=>{
+    const total=a.acoes.length,conc=a.acoes.filter(ac=>ac.concluida).length,pend=total-conc;
+    const pct=total?Math.round(conc/total*100):0;
+    const botoesEdicao=modoEdicao?`
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+        <button class="btn btn-sm" onclick="abrirModal('${a.id}')">✏️ Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="deletarAta('${a.id}')">🗑 Excluir</button>
+      </div>`:'';
+    return `<div class="ata-item">
+      <div class="ata-header" onclick="toggleAta('${a.id}')">
+        <div style="flex:1;min-width:0">
+          <div class="ata-title">${esc(a.titulo)}</div>
+          <div class="ata-meta">📅 ${fmtData(a.data)}${a.participantes?' · 👥 '+esc(a.participantes):''}</div>
+          ${total>0?`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:12px;flex-shrink:0">
+          ${pend>0?`<span class="badge badge-pend">⏳ ${pend} pendente${pend>1?'s':''}</span>`:''}
+          ${pend===0&&total>0?`<span class="badge badge-ok">✓ Concluído</span>`:''}
+          <span id="chev-${a.id}" style="color:var(--text-3);font-size:18px">▾</span>
+        </div>
+      </div>
+      <div class="ata-body" id="body-${a.id}">
+        ${a.texto?`<div class="ata-texto">${esc(a.texto)}</div>`:''}
+        <div class="acoes-titulo">Ações (${conc}/${total} concluída${total!==1?'s':''})</div>
+        ${!total?'<div style="font-size:13px;color:var(--text-3)">Nenhuma ação registrada.</div>':
+          a.acoes.map(ac=>`
+          <div class="acao-item">
+            <input type="checkbox" ${ac.concluida?'checked':''} ${modoEdicao?'':'disabled'} onchange="toggleAcao('${a.id}','${ac.id}',this.checked)">
+            <div style="flex:1">
+              <div class="acao-txt ${ac.concluida?'done':''}" id="txt-${ac.id}">${esc(ac.texto)}</div>
+              ${ac.responsavel?`<div class="acao-resp">👤 ${esc(ac.responsavel)}</div>`:''}
+              ${ac.prazo?`<div class="acao-prazo">⏰ ${esc(ac.prazo)}</div>`:''}
+            </div>
+          </div>`).join('')}
+        ${botoesEdicao}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleAta(id){
+  const body=document.getElementById('body-'+id),chev=document.getElementById('chev-'+id);
+  const open=body.classList.toggle('open');
+  chev.textContent=open?'▴':'▾';
+  chev.style.color=open?'var(--acc)':'var(--text-3)';
+}
+function toggleAcao(ataId,acaoId,val){
+  if(!modoEdicao) return;
+  const ata=atas.find(a=>String(a.id)===String(ataId));if(!ata)return;
+  const ac=ata.acoes.find(a=>String(a.id)===String(acaoId));if(!ac)return;
+  ac.concluida=val; save();
+  const txt=document.getElementById('txt-'+acaoId);
+  if(txt)txt.className='acao-txt'+(val?' done':'');
+}
+function deletarAta(id){
+  if(!modoEdicao){alert('Entre no modo de edição primeiro.');return;}
+  if(!confirm('Excluir esta ata permanentemente?'))return;
+  atas=atas.filter(a=>String(a.id)!==String(id)); save(); renderLista();
+}
+function renderTodasAcoes(){
+  const filtro=document.getElementById('filtro-acoes').value;
+  let total=0,conc=0;
+  atas.forEach(a=>a.acoes.forEach(ac=>{total++;if(ac.concluida)conc++;}));
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat"><div class="stat-n" style="color:var(--acc)">${total}</div><div class="stat-l">Total de ações</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--warn)">${total-conc}</div><div class="stat-l">Pendentes</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--success)">${conc}</div><div class="stat-l">Concluídas</div></div>`;
+  let html='';
+  atas.forEach(a=>{
+    const acoes=a.acoes.filter(ac=>filtro==='pendente'?!ac.concluida:filtro==='concluido'?ac.concluida:true);
+    if(!acoes.length)return;
+    const c=a.acoes.filter(ac=>ac.concluida).length;
+    html+=`<div class="ata-acoes-grp">
+      <div class="ata-acoes-grp-header">
+        <div style="font-size:14px;font-weight:700">${esc(a.titulo)}</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:2px">📅 ${fmtData(a.data)} · ${c}/${a.acoes.length} concluída${a.acoes.length!==1?'s':''}</div>
+      </div>
+      <div class="ata-acoes-grp-body">
+        ${acoes.map(ac=>`
+        <div class="acao-item">
+          <input type="checkbox" ${ac.concluida?'checked':''} ${modoEdicao?'':'disabled'} onchange="toggleAcaoG('${a.id}','${ac.id}',this.checked)">
+          <div style="flex:1">
+            <div class="acao-txt ${ac.concluida?'done':''}" id="gtxt-${ac.id}">${esc(ac.texto)}</div>
+            ${ac.responsavel?`<div class="acao-resp">👤 ${esc(ac.responsavel)}</div>`:''}
+            ${ac.prazo?`<div class="acao-prazo">⏰ ${esc(ac.prazo)}</div>`:''}
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+  document.getElementById('todas-acoes').innerHTML=html||'<div class="empty">✅ Nenhuma ação encontrada.</div>';
+}
+function toggleAcaoG(ataId,acaoId,val){
+  if(!modoEdicao) return;
+  const ata=atas.find(a=>String(a.id)===String(ataId));if(!ata)return;
+  const ac=ata.acoes.find(a=>String(a.id)===String(acaoId));if(!ac)return;
+  ac.concluida=val; save();
+  const txt=document.getElementById('gtxt-'+acaoId);
+  if(txt)txt.className='acao-txt'+(val?' done':'');
+}
+
+// MODAL
+function abrirModal(id){
+  if(!modoEdicao){alert('Entre no modo de edição primeiro.');return;}
+  const ata=atas.find(a=>String(a.id)===String(id));
+  if(!ata) return;
+  editandoId=id;
+  document.getElementById('edit-data').value=ata.data||'';
+  document.getElementById('edit-titulo').value=ata.titulo||'';
+  document.getElementById('edit-partic').value=ata.participantes||'';
+  document.getElementById('edit-texto').value=ata.texto||'';
+  renderAcoesEdit(ata.acoes);
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+function renderAcoesEdit(acoes){
+  const lista=document.getElementById('edit-acoes-lista');
+  if(!acoes||!acoes.length){lista.innerHTML='<div style="font-size:13px;color:var(--text-3);padding:6px 0">Nenhuma ação. Adicione abaixo.</div>';return;}
+  lista.innerHTML=acoes.map((a)=>`
+    <div class="acao-edit-row" id="erow-${a.id}">
+      <div style="flex:1">
+        <input type="text" value="${esc(a.texto)}" id="etxt-${a.id}" placeholder="Descrição da ação" style="margin-bottom:5px">
+        <div style="display:flex;gap:6px">
+          <input type="text" value="${esc(a.responsavel||'')}" id="eresp-${a.id}" placeholder="Responsável" style="flex:1;font-size:12px">
+          <input type="text" value="${esc(a.prazo||'')}" id="eprazo-${a.id}" placeholder="Prazo" style="flex:1;font-size:12px">
+        </div>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="remAcaoEdit('${a.id}')" title="Remover">✕</button>
+    </div>`).join('');
+}
+function remAcaoEdit(acaoId){
+  const ata=atas.find(a=>String(a.id)===String(editandoId));
+  if(!ata) return;
+  ata.acoes=ata.acoes.filter(a=>String(a.id)!==String(acaoId));
+  renderAcoesEdit(ata.acoes);
+}
+function addAcaoEdit(){
+  const txt=document.getElementById('edit-nova-acao').value.trim();
+  if(!txt){alert('Descreva a ação.');return;}
+  const resp=document.getElementById('edit-nova-resp').value.trim();
+  const ata=atas.find(a=>String(a.id)===String(editandoId));
+  if(!ata) return;
+  ata.acoes.push({id:uid(),texto:txt,responsavel:resp,prazo:'',concluida:false});
+  document.getElementById('edit-nova-acao').value='';
+  document.getElementById('edit-nova-resp').value='';
+  renderAcoesEdit(ata.acoes);
+}
+function salvarEdicao(){
+  const ata=atas.find(a=>String(a.id)===String(editandoId));
+  if(!ata) return;
+  ata.data=document.getElementById('edit-data').value;
+  ata.titulo=document.getElementById('edit-titulo').value.trim();
+  ata.participantes=document.getElementById('edit-partic').value.trim();
+  ata.texto=document.getElementById('edit-texto').value;
+  ata.acoes.forEach(a=>{
+    const t=document.getElementById('etxt-'+a.id);
+    const r=document.getElementById('eresp-'+a.id);
+    const p=document.getElementById('eprazo-'+a.id);
+    if(t) a.texto=t.value;
+    if(r) a.responsavel=r.value;
+    if(p) a.prazo=p.value;
+  });
+  save(); fecharModal(); renderLista();
+}
+function fecharModal(){
+  document.getElementById('modal-overlay').classList.add('hidden');
+  document.body.style.overflow='';
+  editandoId=null;
+}
+function fecharModalSeFora(e){ if(e.target===document.getElementById('modal-overlay')) fecharModal(); }
+
+carregarDados();
+showTab('lista');
+</script>
+</body>
+</html>
